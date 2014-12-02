@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <semaphore.h>
 #include <mutex>
+#include <algorithm>
 
 using namespace std;
 
@@ -32,9 +33,6 @@ public:
   }
   int num;
   vector<vertex> neighbors;
-
-
-
 };
 
 class MyInput{
@@ -97,6 +95,7 @@ void myunlocker(mutex* m,int a, int b){
 }
 
 void bfs(vector<vertex> *nodes,int num,int* seen,queue<int> *gq,int* ancestors, int myancestor,queue<int> *localq){
+
   queue<int> *q = localq;
   /*if (seen[num] == 1){
     ancestors[myancestor]=ancestors[num];
@@ -104,18 +103,25 @@ void bfs(vector<vertex> *nodes,int num,int* seen,queue<int> *gq,int* ancestors, 
   }*/
 
   //mutexes[num].lock();
-  //cout<<"lock "<<num<<endl;
+
   mylocker(mutexes,myancestor,num);
   if (seen[num] == 1){
-    ancestors[myancestor]=ancestors[num];
+    if(ancestors[num]==num){
+      ancestors[num]=myancestor;
+    }
+    //myancestor = ancestors[num];
+    int localmin = min(num,num);
+    ancestors[myancestor]=ancestors[localmin];
+    ancestors[num]=ancestors[localmin];
     //cout<<"unlock "<<num<<endl;
     //mutexes[num].unlock();
     myunlocker(mutexes,myancestor,num);
     //cout<<"after unlock "<<num<<endl;
     return;
   }
-  ancestors[num] = ancestors[myancestor];
+   ancestors[num]=myancestor ;
   seen[num] = 1;
+  //cout<<"node: "<<num<<endl;
   //cout<<"unlock "<<num<<endl;
 //  mutexes[num].unlock();
 myunlocker(mutexes,myancestor,num);
@@ -128,25 +134,26 @@ myunlocker(mutexes,myancestor,num);
   for (int i=0;i<numberofneighbors;i++){
 
     int neighbnum = nodes->operator[](num).neighbors[i].num;
-    if (seen[neighbnum]==0){
+    mylocker(mutexes,myancestor,neighbnum);
+    //if (seen[neighbnum]==0){
 
       q->push(neighbnum);
 
 
-    }
-    else{
-      mylocker(mutexes,myancestor,neighbnum);
+    //}
+    //else{
+
       ancestors[myancestor]=ancestors[neighbnum];
       //mutexes[myancestor].unlock();
       myunlocker(mutexes,myancestor,neighbnum);
-    }
+    //}
 
   }
 
   while(q->size()!=0){
     int next = q->front();
     q->pop();
-    bfs(nodes,next,seen,gq,ancestors,myancestor,localq);
+    bfs(nodes,next,seen,gq,ancestors,ancestors[num],localq);///changed
     // Flush some part of local queue to the global queue
     if (q->size()>q_threshold){
       while(q->size()>q_threshold){
@@ -228,6 +235,7 @@ cout<<flush<<"graph is built...."<<endl;
 // Initialize
 cout<<flush<<"initializing..."<<endl;
     int numberofnodes = nodes.size();
+
     if(numberofprocessors>numberofnodes){
       numberofprocessors = numberofnodes;
     }
@@ -265,22 +273,23 @@ cout<<flush<<"starting the threads..."<<endl;
         myiterator = myiterator+1;
       }
     }
-    cout<<"main process is done "<<myiterator<<endl;
+    cout<<"main process is done "<<endl;
 
     for (int i=0;i<numberofnodes;i++){
-      cout<<i<<" "<<ancestors[i]<<endl;
+  //    cout<<i<<" "<<ancestors[i]<<endl;
 
     }
-cout<<"***********************"<<endl;
+//cout<<"***********************"<<endl;
 //Count the found clusters
-for (int i=0;i<numberofprocessors;i++){
+/*for (int i=0;i<numberofprocessors;i++){
     pthread_join(threads[i],NULL);
     //cout<<i<<"'th processor is done"<<endl;
   //cout<<flush<<"thread number "<<i<<" has been created"<<endl;
-}
+}*/
 int numberofclusters = 0;
+sleep(1);
     for (int i=0;i<numberofnodes;i++){
-      cout<<i<<" "<<ancestors[i]<<endl;
+//      cout<<i<<" "<<ancestors[i]<<endl;
       if(ancestors[i]==i){
         numberofclusters=numberofclusters+1;
         //cout<<i<<" ";
