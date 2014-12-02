@@ -63,17 +63,17 @@ void mylocker(mutex* m,int a, int b){
   if (a>b){
     m[b].lock();
     m[a].lock();
-    cout<<"lock "<<a<<" "<<b<<" "<<endl;
+    //cout<<"lock "<<a<<" "<<b<<" "<<endl;
     return;
   }
   if(a<b){
     m[a].lock();
     m[b].lock();
-    cout<<"lock "<<a<<" "<<b<<" "<<endl;
+  //  cout<<"lock "<<a<<" "<<b<<" "<<endl;
     return;
   }
   m[a].lock();
-  cout<<"lock "<<a<<" "<<b<<" "<<endl;
+  //cout<<"lock "<<a<<" "<<b<<" "<<endl;
   return;
 }
 
@@ -114,7 +114,7 @@ void bfs(vector<vertex> *nodes,int num,int* seen,queue<int> *gq,int* ancestors, 
     //cout<<"after unlock "<<num<<endl;
     return;
   }
-  ancestors[num] = myancestor;
+  ancestors[num] = ancestors[myancestor];
   seen[num] = 1;
   //cout<<"unlock "<<num<<endl;
 //  mutexes[num].unlock();
@@ -228,6 +228,9 @@ cout<<flush<<"graph is built...."<<endl;
 // Initialize
 cout<<flush<<"initializing..."<<endl;
     int numberofnodes = nodes.size();
+    if(numberofprocessors>numberofnodes){
+      numberofprocessors = numberofnodes;
+    }
     int *seen = new int[numberofnodes];
     int *ancestors = new int[numberofnodes];
     mutexes = new mutex[numberofnodes];
@@ -264,6 +267,11 @@ cout<<flush<<"starting the threads..."<<endl;
     }
     cout<<"main process is done "<<myiterator<<endl;
 
+    for (int i=0;i<numberofnodes;i++){
+      cout<<i<<" "<<ancestors[i]<<endl;
+
+    }
+cout<<"***********************"<<endl;
 //Count the found clusters
 for (int i=0;i<numberofprocessors;i++){
     pthread_join(threads[i],NULL);
