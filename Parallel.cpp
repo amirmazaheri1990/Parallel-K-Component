@@ -85,7 +85,18 @@ void myunlocker(pthread_mutex_t *m,int a, int b){
   pthread_mutex_unlock(&m[a]);
   return;
 }
-
+int findoriginate(int* ancestors,int input){
+  int out=input;
+  out = ancestors[input];
+  while(out!=ancestors[out]){
+    if(out==input){
+      ancestors[input]=out;
+      continue;
+    }
+    out = ancestors[out];
+  }
+  return out;
+}
 void bfs(vector<vertex> *nodes,int num,int* seen,queue<int> *gq,int* ancestors, int myancestor,queue<int> *localq){
   queue<int> *q = localq;
   mylocker(mutexes,myancestor,num);
@@ -94,8 +105,9 @@ void bfs(vector<vertex> *nodes,int num,int* seen,queue<int> *gq,int* ancestors, 
       ancestors[num]=myancestor;
     }
     int localmin = min(num,num);
-    ancestors[myancestor]=ancestors[localmin];
-    ancestors[num]=ancestors[localmin];
+    int k = findoriginate(ancestors,localmin);
+    ancestors[myancestor]=ancestors[k];
+    ancestors[num]=ancestors[k];
     myunlocker(mutexes,myancestor,num);
     return;
   }
@@ -105,10 +117,10 @@ void bfs(vector<vertex> *nodes,int num,int* seen,queue<int> *gq,int* ancestors, 
   int numberofneighbors = nodes->operator[](num).neighbors.size();
   for (int i=0;i<numberofneighbors;i++){
     int neighbnum = nodes->operator[](num).neighbors[i].num;
-    mylocker(mutexes,myancestor,neighbnum);
+    //mylocker(mutexes,myancestor,neighbnum);
     q->push(neighbnum);
-    ancestors[myancestor]=ancestors[neighbnum];
-    myunlocker(mutexes,myancestor,neighbnum);
+    //ancestors[myancestor]=ancestors[neighbnum];
+    //myunlocker(mutexes,myancestor,neighbnum);
   }
   while(q->size()!=0){
     int next = q->front();
@@ -135,7 +147,7 @@ void* processor(void* input){
   queue<int> localq;
   bfs(amir->nodes,num,amir->seen,amir->global_queue,amir->ancestors, num,&localq);
   while(*(amir->myiterator)<amir->numberofnodes){
-    if(amir->global_queue->size()==0){
+    if(amir->global_queue->size()==0||1){//Changeeeee
       num = *(amir->myiterator);
       bfs(amir->nodes,num,amir->seen,amir->global_queue,amir->ancestors, num,&localq);
       continue;
